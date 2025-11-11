@@ -68,13 +68,13 @@ const onFileChange = async () => {
           typeof outputFile === 'string' ? outputFile : new TextDecoder().decode(outputFile)
 
         const outputInfo = JSON.parse(outputFileText)
-        const streamList = (outputInfo.streams as object[])
+        const streamList = (outputInfo.streams as any[])
           .sort((x) => x['index'])
           .map((x) => {
             const infoDict = {} as Record<string, string>
 
             infoDict['编码'] = x['codec_long_name']
-            const codecType = x['codec_type'] as string
+            const codecType = x['codec_type']
             infoDict['轨道类型'] = codecType
 
             if (codecType == 'audio') {
