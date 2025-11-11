@@ -1,8 +1,24 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import MediaInfo from '@/view/MediaInfo.vue'
+import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+
+export const menuList = [
+  {
+    title: 'Media Info Explorer',
+    id: 'tools_media-info',
+    path: '/tools/media-info',
+    component: MediaInfo,
+  },
+]
+
+const routerList: Array<RouteRecordRaw> = menuList.map((item) => ({
+  name: item.id,
+  path: item.path,
+  component: item.component,
+}))
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [],
+  routes: routerList,
 })
 
 export default router
