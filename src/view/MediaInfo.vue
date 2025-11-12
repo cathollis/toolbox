@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, isReadonly, onMounted, reactive, readonly, ref } from 'vue'
+import { CodeEditor } from 'monaco-editor-vue3'
 import { FFmpeg } from '@ffmpeg/ffmpeg'
 import { fetchFile } from '@ffmpeg/util'
+import humanizeDuration from 'humanize-duration'
 
 const ffmpeg = new FFmpeg()
 
@@ -18,24 +20,155 @@ const file = computed(() => {
   }
 })
 
-const fileInfo = reactive<{
+interface IFfmpegFormat {
+  nb_streams: number
+  nb_programs: number
+  format_name: string
+  format_long_name: string
+  start_time: string
+  duration: string
+  size: string
+  bit_rate: string
+  tags: ReadonlyMap<string, string>
+}
+
+interface IFfmpegStream {
+  index: number
+  codec_type: string
+  codec_tag_string: string
+  id: string
+  time_base: string
+  start_pts: number
+  start_time: string
+  duration_ts: number
+  duration: string
+  bit_rate: string
+  tags?: ReadonlyMap<string, string>
+}
+
+const fileInfoView = ref<{
   name?: string
   size?: number
 }>({})
-const infoList = ref<
-  {
-    type: string
-    data: Record<string, string>
-    raw: string
-  }[]
->()
+
+const rawInfo = ref<{
+  format?: IFfmpegFormat
+  streams?: IFfmpegStream[]
+}>({})
+
+const rawInfoView = computed<string | null>(() => {
+  if (!rawInfo.value) return null
+
+  return JSON.stringify(rawInfo.value, null, 2)
+})
+
+const bitRateToString = (inputBitRate: number) => {
+  if (Number.isNaN(inputBitRate)) return '-'
+
+  const kbpsValue = inputBitRate / 1000
+  if (kbpsValue <= 1000) {
+    return `${kbpsValue} kbps`
+  }
+
+  return `${kbpsValue / 1000} mbps`
+}
+
+interface IInfoItemView {
+  title: string
+  data: string | any
+  tips: string
+  hasProcessed: boolean
+}
+
+const formatInfoView = computed<IInfoItemView[]>(() => {
+  const format = rawInfo.value.format
+  if (!format) return []
+
+  const infoList = Object.entries(format)
+    .map(([key, val]) => {
+      let infoItem = {
+        title: key,
+        data: val,
+        tips: '',
+        hasProcessed: false,
+      }
+
+      if (key === 'format_name') {
+        infoItem.hasProcessed = true
+        infoItem.title = 'Format Name'
+      } else if (key === 'format_long_name') {
+        infoItem.hasProcessed = true
+        infoItem.title = 'Format Name(full)'
+      } else if (key === 'duration') {
+        infoItem.hasProcessed = true
+
+        const duration = Number(format.duration)
+        const durationMs = Number.isNaN(duration) ? -1 : duration * 1000
+
+        infoItem.title = 'Duration'
+        infoItem.data = humanizeDuration(durationMs)
+      } else if (key === 'size') {
+        infoItem.hasProcessed = true
+
+        const size = Number(format.size)
+        const sizeKb = Number.isNaN(size) ? '-' : `${size / 1024} KB`
+        infoItem.title = 'Size'
+        infoItem.data = sizeKb
+        infoItem.tips = '1024 Bytes'
+      } else if (key === 'bit_rate') {
+        infoItem.hasProcessed = true
+
+        const rate = Number(format.bit_rate)
+        infoItem.title = 'Bit Rate'
+        infoItem.data = bitRateToString(rate)
+        infoItem.tips = '1000 bits pre second'
+      }
+
+      return infoItem
+    })
+    .sort((a, b) => Number(b.hasProcessed) - Number(a.hasProcessed))
+
+  return infoList
+})
+
+interface IMediaInfoViewItem {
+  title: string
+  infoList: IInfoItemView[]
+}
+
+const mediaInfoView = computed<IMediaInfoViewItem[]>(() => {
+  const streamList = rawInfo.value.streams
+  if (!streamList) return []
+
+  const mediaInfoList = streamList.map((stream) => {
+    const streamInfoList = Object.entries(stream)
+      .map(([key, val]) => {
+        let infoItem = {
+          title: key,
+          data: val,
+          tips: '',
+          hasProcessed: false,
+        }
+
+        return infoItem
+      })
+      .sort((a, b) => Number(b.hasProcessed) - Number(a.hasProcessed))
+
+    return {
+      title: `${stream.index}-${stream.codec_type}`,
+      infoList: streamInfoList,
+    }
+  })
+
+  return mediaInfoList
+})
 
 const onFileChange = async () => {
   const uploadedFile = file.value
   if (!uploadedFile) return
 
-  fileInfo.name = uploadedFile.name
-  fileInfo.size = Math.round(uploadedFile.size / 1024)
+  fileInfoView.value.name = uploadedFile.name
+  fileInfoView.value.size = Math.round(uploadedFile.size / 1024)
 
   try {
     isProgressing.value = true
@@ -68,32 +201,9 @@ const onFileChange = async () => {
           typeof outputFile === 'string' ? outputFile : new TextDecoder().decode(outputFile)
 
         const outputInfo = JSON.parse(outputFileText)
-        const streamList = (outputInfo.streams as any[])
-          .sort((x) => x['index'])
-          .map((x) => {
-            const infoDict = {} as Record<string, string>
-
-            infoDict['编码'] = x['codec_long_name']
-            const codecType = x['codec_type']
-            infoDict['轨道类型'] = codecType
-
-            if (codecType == 'audio') {
-              infoDict['声道数'] = x['channels']
-              infoDict['声道布局'] = x['channel_layout']
-              infoDict['采样格式'] = x['sample_fmt']
-              infoDict['采样率'] = x['sample_rate']
-              infoDict['比特率（码率）'] = x['bit_rate']
-            } else if (codecType == 'video') {
-            }
-
-            return {
-              type: codecType,
-              data: infoDict,
-              raw: JSON.stringify(x),
-            }
-          })
-
-        infoList.value = streamList
+        if (outputInfo) {
+          rawInfo.value = outputInfo
+        }
       }
     } finally {
       await ffmpeg.deleteFile(inputFileName)
@@ -108,7 +218,7 @@ const onFileChange = async () => {
 <template>
   <v-container class="d-flex flex-column ga-8">
     <v-card title="Operations">
-      <div class="d-flex ga-4">
+      <v-card-text>
         <v-file-input
           accept="audio/*,video/*"
           clearable
@@ -116,34 +226,93 @@ const onFileChange = async () => {
           :loading="isProgressing"
           v-model="fileModel"
         ></v-file-input>
-
+        <v-icon icon="mdi-home" />
+      </v-card-text>
+      <v-card-actions>
         <v-btn :disabled="!file" :loading="isProgressing" @click="onFileChange">Process</v-btn>
-      </div>
+      </v-card-actions>
     </v-card>
 
     <v-card title="File info">
-      <div v-if="fileInfo">
-        <p><strong>File name:</strong> {{ fileInfo.name }}</p>
-        <p><strong>File size:</strong> {{ fileInfo.size }} KB</p>
-      </div>
+      <v-card-text>
+        <p><strong>File name:</strong> {{ fileInfoView.name ?? '-' }}</p>
+        <p><strong>File size:</strong> {{ fileInfoView.size ?? '-' }} KB</p>
+      </v-card-text>
+    </v-card>
+
+    <v-card title="Format Info">
+      <v-list>
+        <v-list-item v-for="info in formatInfoView">
+          <v-row>
+            <v-col cols="4" class="font-weight-bold text-grey-darken-1">
+              <v-tooltip v-if="info.tips" :text="info.tips">
+                <template v-slot:activator="">
+                  <p>{{ info.title }}</p>
+                </template>
+              </v-tooltip>
+              <p v-else>{{ info.title }}</p>
+            </v-col>
+            <v-col cols="8" class="text-truncate">
+              <p v-if="typeof info.data === 'string' || typeof info.data === 'number'">
+                {{ info.data.toString() }}
+              </p>
+              <div v-else>
+                <p v-for="[infoKey, infoVal] in Object.entries(info.data)">
+                  {{ infoKey }} : {{ infoVal }}
+                </p>
+              </div>
+            </v-col>
+          </v-row>
+        </v-list-item>
+      </v-list>
     </v-card>
 
     <v-card title="Media info">
-      <div v-if="infoList">
-        <div v-for="info in infoList">
-          <h2>{{ info.type }}</h2>
-          <v-list>
-            <v-list-item v-for="(value, key) in info.data" :key="key" class="py-2">
-              <v-row>
-                <v-col cols="4" class="font-weight-bold text-grey-darken-1">{{ key }}</v-col>
-                <v-col cols="8" class="text-truncate">{{ value }}</v-col>
-              </v-row>
-            </v-list-item>
-          </v-list>
-          <h3>原始信息</h3>
-          <code>{{ info.raw }}</code>
+      <v-card-text>
+        <v-expansion-panels>
+          <v-expansion-panel v-for="mediaInfoItem in mediaInfoView" :title="mediaInfoItem.title">
+            <v-expansion-panel-text>
+              <v-list>
+                <v-list-item v-for="info in mediaInfoItem.infoList">
+                  <v-row>
+                    <v-col cols="4" class="font-weight-bold text-grey-darken-1">
+                      <v-tooltip v-if="info.tips" :text="info.tips">
+                        <template v-slot:activator="{ props }">
+                          <p v-bind="props">{{ info.title }}</p>
+                        </template>
+                      </v-tooltip>
+                      <p v-else>{{ info.title }}</p>
+                    </v-col>
+                    <v-col cols="8" class="text-truncate">
+                      <p v-if="typeof info.data === 'string' || typeof info.data === 'number'">
+                        {{ info.data.toString() }}
+                      </p>
+                      <div v-else>
+                        <p v-for="[infoKey, infoVal] in Object.entries(info.data)">
+                          {{ infoKey }} : {{ infoVal }}
+                        </p>
+                      </div>
+                    </v-col>
+                  </v-row>
+                </v-list-item>
+              </v-list>
+            </v-expansion-panel-text>
+          </v-expansion-panel>
+        </v-expansion-panels>
+      </v-card-text>
+    </v-card>
+
+    <v-card title="Info raw output">
+      <v-card-text>
+        <div style="height: 500px">
+          <CodeEditor
+            v-model:value="rawInfoView"
+            language="json"
+            theme="vs-dark"
+            :options="{ readOnly: true }"
+          />
         </div>
-      </div>
+      </v-card-text>
     </v-card>
   </v-container>
 </template>
