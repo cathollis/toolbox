@@ -57,7 +57,7 @@ const rawInfo = ref<{
 }>({})
 
 const rawInfoView = computed<string | null>(() => {
-  if (!rawInfo.value) return null
+  if (!rawInfo.value.format || !rawInfo.value.streams) return null
 
   return JSON.stringify(rawInfo.value, null, 2)
 })
@@ -226,7 +226,6 @@ const onFileChange = async () => {
           :loading="isProgressing"
           v-model="fileModel"
         ></v-file-input>
-        <v-icon icon="mdi-home" />
       </v-card-text>
       <v-card-actions>
         <v-btn :disabled="!file" :loading="isProgressing" @click="onFileChange">Process</v-btn>
