@@ -1,3 +1,4 @@
+import ImageConvertor from '@/view/ImageConvertor.vue'
 import MediaInfo from '@/view/MediaInfo.vue'
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 
@@ -7,6 +8,12 @@ export const menuList = [
     id: 'tools_media-info',
     path: '/tools/media-info',
     component: MediaInfo,
+  },
+  {
+    title: 'Image Convertor',
+    id: 'tools_image-convertor',
+    path: '/tools/image-convertor',
+    component: ImageConvertor,
   },
 ]
 
