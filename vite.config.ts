@@ -13,6 +13,14 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    exclude: ['@ffmpeg/ffmpeg'],
+    exclude: ['@ffmpeg/ffmpeg', '@imagemagick/magick-wasm'],
+  },
+  build: {
+    target: 'esnext', // 确保支持WASM
+  },
+  server: {
+    fs: {
+      allow: ['..'], // 允许访问node_modules
+    },
   },
 })

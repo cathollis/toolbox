@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, isReadonly, onMounted, reactive, readonly, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { CodeEditor } from 'monaco-editor-vue3'
 import { FFmpeg } from '@ffmpeg/ffmpeg'
 import { fetchFile } from '@ffmpeg/util'
