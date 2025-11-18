@@ -9,40 +9,7 @@ import {
 } from '@imagemagick/magick-wasm'
 import wasm from '@imagemagick/magick-wasm/magick.wasm?url'
 
-const isProgressing = ref<boolean>(false)
-
-const handleClear = () => {
-  fileModel.value = null
-  outputBlob.value = null
-  outputImgUrl.value = ''
-}
-
-const fileModel = ref<File | File[] | null>(null)
-const file = computed<File | null>(() => {
-  if (!fileModel.value) return null
-
-  if (Array.isArray(fileModel.value)) {
-    const fileArray = fileModel.value as File[]
-
-    if (fileArray.length <= 0) return null
-    if (!fileArray[0]) return null
-
-    return fileArray[0]
-  }
-
-  return fileModel.value as File
-})
-
-const fileImgUrl = computed<string>(() => {
-  if (!file.value) return ''
-
-  return URL.createObjectURL(file.value)
-})
-
-const outputBlob = ref<Blob | null>()
-const outputImgUrl = ref<string>('')
-
-const webpPictureDefines: IDefine[] = [
+const webpDesignProfile: IDefine[] = [
   {
     format: MagickFormat.WebP,
     name: 'lossless',
@@ -68,34 +35,137 @@ const webpPictureDefines: IDefine[] = [
     name: 'method',
     value: '6',
   },
+  {
+    format: MagickFormat.WebP,
+    name: 'target-size',
+    value: '0',
+  },
+  {
+    format: MagickFormat.WebP,
+    name: 'preprocessing',
+    value: '0',
+  },
+  {
+    format: MagickFormat.WebP,
+    name: 'target-psnr',
+    value: '42',
+  },
+  {
+    format: MagickFormat.WebP,
+    name: 'segments',
+    value: '3',
+  },
+  {
+    format: MagickFormat.WebP,
+    name: 'filter-sharpness',
+    value: '7',
+  },
+  {
+    format: MagickFormat.WebP,
+    name: 'filter-strength',
+    value: '60',
+  },
 ]
 
-const handleConvertToWebp = () => {
+const targetProfileListView = [
+  {
+    title: 'Design Assets',
+    description: 'For UI/UX design images.',
+    define: webpDesignProfile,
+  },
+  {
+    title: 'Photograph(Not Impl)',
+  },
+  {
+    title: 'Painting(Not Impl)',
+  },
+  {
+    title: 'B&W Document(Not Impl)',
+  },
+  {
+    title: 'Colour Document(Not Impl)',
+  },
+]
+
+const pageIsProgressing = ref<boolean>(false)
+const isProgressing = ref<boolean>(false)
+
+const handleReset = () => {
+  inputFileModel.value = null
+
+  targetBlob.value = null
+  targetFileImageUrlView.value = ''
+  targetQualityModel.value = 75
+}
+
+const inputFileModel = ref<File | File[] | null>(null)
+const inputFile = computed<File | null>(() => {
+  if (!inputFileModel.value) return null
+
+  if (Array.isArray(inputFileModel.value)) {
+    const fileArray = inputFileModel.value as File[]
+
+    if (fileArray.length <= 0) return null
+    if (!fileArray[0]) return null
+
+    return fileArray[0]
+  }
+
+  return inputFileModel.value as File
+})
+
+const inputFileImageUrlView = computed<string>(() => {
+  if (!inputFile.value) return ''
+
+  return URL.createObjectURL(inputFile.value)
+})
+
+const targetBlob = ref<Blob | null>()
+const targetFileImageUrlView = ref<string>('')
+
+const handleFileUpdated = () => {
+  if (inputFileImageUrlView.value.length > 0) {
+    URL.revokeObjectURL(inputFileImageUrlView.value)
+  }
+
+  if (targetFileImageUrlView.value.length > 0) {
+    URL.revokeObjectURL(targetFileImageUrlView.value)
+  }
+}
+
+const getArrayBufferFromUint8Array = (input: Uint8Array): ArrayBuffer => {
+  if (input.buffer instanceof ArrayBuffer) {
+    // 这里还需要考虑偏移和长度
+    return input.buffer.slice(input.byteOffset, input.byteOffset + input.byteLength)
+  } else {
+    // 是 SharedArrayBuffer，需要复制到新 ArrayBuffer
+    return new Uint8Array(input).buffer
+  }
+}
+
+const targetQualityModel = ref<number>(75)
+const handleConvertToWebp = async () => {
   isProgressing.value = true
 
-  if (fileImgUrl.value.length > 0) {
-    URL.revokeObjectURL(fileImgUrl.value)
+  if (targetFileImageUrlView.value.length > 0) {
+    URL.revokeObjectURL(targetFileImageUrlView.value)
   }
 
-  if (outputImgUrl.value.length > 0) {
-    URL.revokeObjectURL(outputImgUrl.value)
+  const outputData = await handleConvertToTarget(
+    MagickFormat.WebP,
+    targetQualityModel.value,
+    webpDesignProfile,
+  )
+
+  if (outputData) {
+    const arrayBuffer = getArrayBufferFromUint8Array(outputData)
+    targetBlob.value = new Blob([arrayBuffer], { type: 'image/webp' })
+    if (targetBlob.value) {
+      targetFileImageUrlView.value = URL.createObjectURL(targetBlob.value)
+    }
   }
 
-  handleConvertToTarget(MagickFormat.WebP, 75, webpPictureDefines)
-    .then((data) => {
-      if (data) {
-        const blobData = new Uint8Array(data.length)
-        blobData.set(data)
-
-        outputBlob.value = new Blob([blobData], { type: 'image/webp' })
-        if (outputBlob.value) {
-          outputImgUrl.value = URL.createObjectURL(outputBlob.value)
-        }
-      }
-    })
-    .finally(() => {
-      isProgressing.value = false
-    })
+  isProgressing.value = false
 }
 
 const handleConvertToTarget = async (
@@ -103,9 +173,9 @@ const handleConvertToTarget = async (
   quality: number,
   defines: IDefine[],
 ): Promise<Uint8Array | undefined> => {
-  if (!file.value) return
+  if (!inputFile.value) return
 
-  const fileData = await file.value.arrayBuffer()
+  const fileData = await inputFile.value.arrayBuffer()
 
   return new Promise<Uint8Array>((resolver, reject) => {
     ImageMagick.read(new Uint8Array(fileData), (image) => {
@@ -125,10 +195,17 @@ const handleConvertToTarget = async (
 }
 
 onMounted(async () => {
+  pageIsProgressing.value = true
   fetch(wasm)
     .then((res) => res.arrayBuffer())
-    .then(async function (testbytes) {
-      await initializeImageMagick(testbytes)
+    .then(async (assembly) => {
+      const validateResult = WebAssembly.validate(assembly)
+      if (validateResult) {
+        await initializeImageMagick(assembly)
+        pageIsProgressing.value = false
+      } else {
+        alert('Web Assembly valid failed.')
+      }
     })
 })
 </script>
@@ -142,28 +219,62 @@ onMounted(async () => {
           clearable
           label="Select image file."
           :loading="isProgressing"
-          v-model="fileModel"
+          v-model="inputFileModel"
+          @change="handleFileUpdated"
         ></v-file-input>
+
+        Quality
+
+        <v-slider
+          v-model="targetQualityModel"
+          :max="100"
+          :min="50"
+          :step="5"
+          class="align-center"
+          hide-details
+        >
+          <template v-slot:append>
+            <v-text-field
+              v-model="targetQualityModel"
+              density="compact"
+              style="width: 80px"
+              type="number"
+              hide-details
+              single-line
+            ></v-text-field>
+          </template>
+        </v-slider>
+
+        <v-row class="flex-nowrap" style="width: 100%; overflow-x: auto">
+          <v-col cols="3" v-for="profile in targetProfileListView">
+            <v-card :title="profile.title">
+              <v-card-text>{{ profile.description }}</v-card-text>
+            </v-card>
+          </v-col>
+        </v-row>
       </v-card-text>
+
       <v-card-actions>
-        <v-btn :disabled="!file" :loading="isProgressing" @click="handleConvertToWebp">
+        <v-btn :disabled="!inputFile" :loading="isProgressing" @click="handleConvertToWebp">
           Process
         </v-btn>
 
-        <v-btn :loading="isProgressing" @click="handleClear"> Clear </v-btn>
+        <v-btn :loading="isProgressing" @click="handleReset"> RESET </v-btn>
       </v-card-actions>
     </v-card>
 
     <v-card title="Result">
       <v-card-text>
-        <p>From {{ file?.size ?? 0 / 1024 }} Kb to {{ outputBlob?.size ?? 0 / 1024 }} Kb</p>
-        <p>{{ Math.floor(((outputBlob?.size ?? 0) / (file?.size ?? Infinity)) * 100) }}%</p>
+        <p>From {{ inputFile?.size ?? 0 / 1024 }} Kb to {{ targetBlob?.size ?? 0 / 1024 }} Kb</p>
+        <p>
+          {{ (Math.floor((targetBlob?.size ?? 0) / (inputFile?.size ?? Infinity)) - 1) * 100 }}%
+        </p>
         <div class="d-flex flex-row">
           <!-- original -->
-          <v-img :src="fileImgUrl"></v-img>
+          <v-img :src="inputFileImageUrlView"></v-img>
 
           <!-- converted -->
-          <v-img :src="outputImgUrl"></v-img>
+          <v-img :src="targetFileImageUrlView"></v-img>
         </div>
       </v-card-text>
     </v-card>
