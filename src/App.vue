@@ -4,7 +4,7 @@ import { menuList } from './router'
 
 const isNavOpen = shallowRef(true)
 
-const showNav = () => {
+const handleShowNav = () => {
   isNavOpen.value = true
 }
 </script>
@@ -14,7 +14,7 @@ const showNav = () => {
     <v-app>
       <v-app-bar title="Toolbox">
         <template v-slot:prepend>
-          <v-btn @click="showNav"> 显示导航栏 </v-btn>
+          <v-btn @click="handleShowNav"> 显示导航栏 </v-btn>
         </template>
       </v-app-bar>
 
