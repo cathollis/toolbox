@@ -4,6 +4,7 @@ import { CodeEditor } from 'monaco-editor-vue3'
 import { FFmpeg } from '@ffmpeg/ffmpeg'
 import { fetchFile } from '@ffmpeg/util'
 import humanizeDuration from 'humanize-duration'
+import { humanizeBinaryBytes } from '@/utils/humanize'
 
 const ffmpeg = new FFmpeg()
 
@@ -111,9 +112,9 @@ const formatInfoView = computed<IInfoItemView[]>(() => {
         infoItem.hasProcessed = true
 
         const size = Number(format.size)
-        const sizeKb = Number.isNaN(size) ? '-' : `${size / 1024} KB`
+
         infoItem.title = 'Size'
-        infoItem.data = sizeKb
+        infoItem.data = humanizeBinaryBytes(size)
         infoItem.tips = '1024 Bytes'
       } else if (key === 'bit_rate') {
         infoItem.hasProcessed = true
