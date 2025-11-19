@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, VNodeRef } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import type { VNodeRef } from 'vue'
 import {
   ColorSpace,
   ImageMagick,
@@ -257,13 +258,13 @@ const containerRef = ref<VNodeRef | undefined>()
             </template>
           </v-slider>
 
-          <v-row class="flex-nowrap" style="width: 100%; overflow-x: auto">
-            <v-col cols="3" v-for="profile in targetProfileListView">
+          <div class="d-flex ga-8 flex-nowrap" style="width: 100%; overflow-x:scroll">
+            <div style="width: 800em;" :key="index" v-for="(profile, index) in targetProfileListView">
               <v-card :title="profile.title">
                 <v-card-text>{{ profile.description }}</v-card-text>
               </v-card>
-            </v-col>
-          </v-row>
+            </div>
+          </div>
         </v-card-text>
 
         <v-card-actions>
