@@ -214,7 +214,7 @@ const containerRef = ref<VNodeRef | undefined>()
 </script>
 
 <template>
-  <div class="d-flex flex-fill" style="position: relative">
+  <div :ref="containerRef" style="width: 100%; height: 100%; position: relative">
     <v-container class="d-flex flex-column ga-8">
       <v-overlay
         contained
@@ -225,7 +225,7 @@ const containerRef = ref<VNodeRef | undefined>()
         <v-progress-circular indeterminate color="primary" />
       </v-overlay>
 
-      <v-card :ref="containerRef" title="Operations">
+      <v-card title="Operations">
         <v-card-text>
           <v-file-input
             accept="image/*"
@@ -258,13 +258,17 @@ const containerRef = ref<VNodeRef | undefined>()
             </template>
           </v-slider>
 
-          <div class="d-flex ga-8 flex-nowrap" style="width: 100%; overflow-x:scroll">
-            <div style="width: 800em;" :key="index" v-for="(profile, index) in targetProfileListView">
+          <v-row class="flex-nowrap" style="width: 100%; overflow-x: auto">
+            <v-col
+              style="width: 900px; flex-basis: unset"
+              :key="index"
+              v-for="(profile, index) in targetProfileListView"
+            >
               <v-card :title="profile.title">
                 <v-card-text>{{ profile.description }}</v-card-text>
               </v-card>
-            </div>
-          </div>
+            </v-col>
+          </v-row>
         </v-card-text>
 
         <v-card-actions>
