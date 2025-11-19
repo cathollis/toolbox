@@ -19,15 +19,13 @@ const handleShowNav = () => {
       </v-app-bar>
 
       <v-navigation-drawer v-model="isNavOpen">
-        <v-list v-for="menuItem in menuList">
+        <v-list :key="index" v-for="(menuItem, index) in menuList">
           <v-list-item :to="menuItem.path" :title="menuItem.title"></v-list-item>
         </v-list>
       </v-navigation-drawer>
 
-      <v-main class="d-flex flex-column">
-        <div class="d-flex flex-fill">
+      <v-main>
         <router-view />
-        </div>
       </v-main>
     </v-app>
   </v-responsive>
