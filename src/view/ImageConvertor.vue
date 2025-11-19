@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, VNodeRef } from 'vue'
 import {
   ColorSpace,
   ImageMagick,
@@ -209,7 +209,7 @@ onMounted(async () => {
     })
 })
 
-const containerRef = ref<HTMLElement>()
+const containerRef = ref<VNodeRef | undefined>()
 </script>
 
 <template>
