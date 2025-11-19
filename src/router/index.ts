@@ -1,8 +1,16 @@
-import ImageConvertor from '@/view/ImageConvertor.vue'
-import MediaInfo from '@/view/MediaInfo.vue'
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 
+import Index from '@/views/Home.vue'
+import MediaInfo from '@/views/MediaInfo.vue'
+import ImageConvertor from '@/views/ImageConvertor.vue'
+
 export const menuList = [
+  {
+    title: 'Home',
+    id: 'home',
+    path: '',
+    component: Index,
+  },
   {
     title: 'Media Info Explorer',
     id: 'tools_media-info',

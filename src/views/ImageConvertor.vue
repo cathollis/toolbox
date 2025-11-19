@@ -8,6 +8,9 @@ import {
   MagickFormat,
   type IDefine,
 } from '@imagemagick/magick-wasm'
+
+import { humanizeBinaryBytes } from '@/utils/humanize.ts'
+
 import wasm from '@imagemagick/magick-wasm/magick.wasm?url'
 
 const webpDesignProfile: IDefine[] = [
@@ -91,27 +94,6 @@ const targetProfileListView = [
 const pageIsProgressing = ref<boolean>(false)
 const isProgressing = ref<boolean>(false)
 
-const handleReset = () => {
-  inputFileModel.value = null
-
-  targetBlob.value = null
-  targetFileImageUrlView.value = ''
-  targetQualityModel.value = 95
-}
-
-const displaySize = (bytesSize?: number): string => {
-  if (bytesSize === null || bytesSize === undefined || Number.isNaN(bytesSize)) {
-    return '-'
-  }
-
-  const kb = bytesSize / 1024
-  if (kb > 1024) {
-    return `${(kb / 1024).toFixed(2)} MB`
-  }
-
-  return `${kb.toFixed(2)} KB`
-}
-
 const diffSizeView = computed<string>(() => {
   const inputSize = inputFile.value?.size
   const targetSize = targetBlob.value?.size
@@ -150,8 +132,15 @@ const inputFileImageUrlView = computed<string>(() => {
   return URL.createObjectURL(inputFile.value)
 })
 
+const inputFileSizeView = computed<string>(() => {
+  return humanizeBinaryBytes(inputFile.value?.size)
+})
+
 const targetBlob = ref<Blob | null>()
 const targetFileImageUrlView = ref<string>('')
+const targetFileSizeView = computed<string>(() => {
+  return humanizeBinaryBytes(targetBlob.value?.size)
+})
 
 const handleFileUpdated = () => {
   if (inputFileImageUrlView.value.length > 0) {
@@ -226,6 +215,14 @@ const handleConvertToTarget = async (
       }
     })
   })
+}
+
+const handleReset = () => {
+  inputFileModel.value = null
+
+  targetBlob.value = null
+  targetFileImageUrlView.value = ''
+  targetQualityModel.value = 95
 }
 
 onMounted(async () => {
@@ -315,11 +312,7 @@ const containerRef = ref<VNodeRef | undefined>()
 
       <v-card title="Result">
         <v-card-text>
-          <p>
-            From {{ displaySize(inputFile?.size) }} to {{ displaySize(targetBlob?.size) }} ({{
-              diffSizeView
-            }})
-          </p>
+          <p>From {{ inputFileSizeView }} to {{ targetFileSizeView }} ({{ diffSizeView }})</p>
           <div class="d-flex flex-row">
             <!-- original -->
             <v-img :src="inputFileImageUrlView"></v-img>
