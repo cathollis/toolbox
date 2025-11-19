@@ -96,8 +96,37 @@ const handleReset = () => {
 
   targetBlob.value = null
   targetFileImageUrlView.value = ''
-  targetQualityModel.value = 75
+  targetQualityModel.value = 95
 }
+
+const displaySize = (bytesSize?: number): string => {
+  if (bytesSize === null || bytesSize === undefined || Number.isNaN(bytesSize)) {
+    return '-'
+  }
+
+  const kb = bytesSize / 1024
+  if (kb > 1024) {
+    return `${(kb / 1024).toFixed(2)} MB`
+  }
+
+  return `${kb.toFixed(2)} KB`
+}
+
+const diffSizeView = computed<string>(() => {
+  const inputSize = inputFile.value?.size
+  const targetSize = targetBlob.value?.size
+  if (inputSize === null || inputSize === undefined || Number.isNaN(inputSize)) {
+    return '-'
+  }
+
+  if (targetSize === null || targetSize === undefined || Number.isNaN(targetSize)) {
+    return '-'
+  }
+
+  const percent = targetSize / inputSize
+  const result = Math.round((percent - 1) * 100)
+  return `${result}%`
+})
 
 const inputFileModel = ref<File | File[] | null>(null)
 const inputFile = computed<File | null>(() => {
@@ -144,7 +173,7 @@ const getArrayBufferFromUint8Array = (input: Uint8Array): ArrayBuffer => {
   }
 }
 
-const targetQualityModel = ref<number>(75)
+const targetQualityModel = ref<number>(95)
 const handleConvertToWebp = async () => {
   isProgressing.value = true
 
@@ -183,14 +212,18 @@ const handleConvertToTarget = async (
       // read finished
       image.quality = quality
 
-      defines.forEach((define) => {
-        image.settings.setDefine(define.format, define.name, define.value)
-      })
+      try {
+        defines.forEach((define) => {
+          image.settings.setDefine(define.format, define.name, define.value)
+        })
 
-      image.colorSpace = ColorSpace.sRGB
-      image.write(targetFormat, (outputData) => {
-        resolver(outputData)
-      })
+        image.colorSpace = ColorSpace.sRGB
+        image.write(targetFormat, (outputData) => {
+          resolver(outputData)
+        })
+      } catch (e) {
+        alert(e)
+      }
     })
   })
 }
@@ -282,9 +315,10 @@ const containerRef = ref<VNodeRef | undefined>()
 
       <v-card title="Result">
         <v-card-text>
-          <p>From {{ inputFile?.size ?? 0 / 1024 }} Kb to {{ targetBlob?.size ?? 0 / 1024 }} Kb</p>
           <p>
-            {{ (Math.floor((targetBlob?.size ?? 0) / (inputFile?.size ?? Infinity)) - 1) * 100 }}%
+            From {{ displaySize(inputFile?.size) }} to {{ displaySize(targetBlob?.size) }} ({{
+              diffSizeView
+            }})
           </p>
           <div class="d-flex flex-row">
             <!-- original -->
