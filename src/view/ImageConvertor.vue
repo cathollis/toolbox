@@ -208,77 +208,90 @@ onMounted(async () => {
       }
     })
 })
+
+const containerRef = ref<HTMLElement>()
 </script>
 
 <template>
-  <v-container class="d-flex flex-column ga-8">
-    <v-card title="Operations">
-      <v-card-text>
-        <v-file-input
-          accept="image/*"
-          clearable
-          label="Select image file."
-          :loading="isProgressing"
-          v-model="inputFileModel"
-          @change="handleFileUpdated"
-        ></v-file-input>
+  <div class="d-flex flex-fill" style="position: relative">
+    <v-container class="d-flex flex-column ga-8">
+      <v-overlay
+        contained
+        class="d-flex align-center justify-center"
+        persistent
+        v-model="pageIsProgressing"
+      >
+        <v-progress-circular indeterminate color="primary" />
+      </v-overlay>
 
-        Quality
+      <v-card :ref="containerRef" title="Operations">
+        <v-card-text>
+          <v-file-input
+            accept="image/*"
+            clearable
+            label="Select image file."
+            :loading="isProgressing"
+            v-model="inputFileModel"
+            @change="handleFileUpdated"
+          ></v-file-input>
 
-        <v-slider
-          v-model="targetQualityModel"
-          :max="100"
-          :min="50"
-          :step="5"
-          class="align-center"
-          hide-details
-        >
-          <template v-slot:append>
-            <v-text-field
-              v-model="targetQualityModel"
-              density="compact"
-              style="width: 80px"
-              type="number"
-              hide-details
-              single-line
-            ></v-text-field>
-          </template>
-        </v-slider>
+          Quality
 
-        <v-row class="flex-nowrap" style="width: 100%; overflow-x: auto">
-          <v-col cols="3" v-for="profile in targetProfileListView">
-            <v-card :title="profile.title">
-              <v-card-text>{{ profile.description }}</v-card-text>
-            </v-card>
-          </v-col>
-        </v-row>
-      </v-card-text>
+          <v-slider
+            v-model="targetQualityModel"
+            :max="100"
+            :min="50"
+            :step="5"
+            class="align-center"
+            hide-details
+          >
+            <template v-slot:append>
+              <v-text-field
+                v-model="targetQualityModel"
+                density="compact"
+                style="width: 80px"
+                type="number"
+                hide-details
+                single-line
+              ></v-text-field>
+            </template>
+          </v-slider>
 
-      <v-card-actions>
-        <v-btn :disabled="!inputFile" :loading="isProgressing" @click="handleConvertToWebp">
-          Process
-        </v-btn>
+          <v-row class="flex-nowrap" style="width: 100%; overflow-x: auto">
+            <v-col cols="3" v-for="profile in targetProfileListView">
+              <v-card :title="profile.title">
+                <v-card-text>{{ profile.description }}</v-card-text>
+              </v-card>
+            </v-col>
+          </v-row>
+        </v-card-text>
 
-        <v-btn :loading="isProgressing" @click="handleReset"> RESET </v-btn>
-      </v-card-actions>
-    </v-card>
+        <v-card-actions>
+          <v-btn :disabled="!inputFile" :loading="isProgressing" @click="handleConvertToWebp">
+            Process
+          </v-btn>
 
-    <v-card title="Result">
-      <v-card-text>
-        <p>From {{ inputFile?.size ?? 0 / 1024 }} Kb to {{ targetBlob?.size ?? 0 / 1024 }} Kb</p>
-        <p>
-          {{ (Math.floor((targetBlob?.size ?? 0) / (inputFile?.size ?? Infinity)) - 1) * 100 }}%
-        </p>
-        <div class="d-flex flex-row">
-          <!-- original -->
-          <v-img :src="inputFileImageUrlView"></v-img>
+          <v-btn :loading="isProgressing" @click="handleReset"> RESET </v-btn>
+        </v-card-actions>
+      </v-card>
 
-          <!-- converted -->
-          <v-img :src="targetFileImageUrlView"></v-img>
-        </div>
-      </v-card-text>
-    </v-card>
-  </v-container>
+      <v-card title="Result">
+        <v-card-text>
+          <p>From {{ inputFile?.size ?? 0 / 1024 }} Kb to {{ targetBlob?.size ?? 0 / 1024 }} Kb</p>
+          <p>
+            {{ (Math.floor((targetBlob?.size ?? 0) / (inputFile?.size ?? Infinity)) - 1) * 100 }}%
+          </p>
+          <div class="d-flex flex-row">
+            <!-- original -->
+            <v-img :src="inputFileImageUrlView"></v-img>
+
+            <!-- converted -->
+            <v-img :src="targetFileImageUrlView"></v-img>
+          </div>
+        </v-card-text>
+      </v-card>
+    </v-container>
+  </div>
 </template>
 
 <style scoped></style>

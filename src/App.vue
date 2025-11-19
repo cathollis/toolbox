@@ -24,8 +24,10 @@ const handleShowNav = () => {
         </v-list>
       </v-navigation-drawer>
 
-      <v-main>
+      <v-main class="d-flex flex-column">
+        <div class="d-flex flex-fill">
         <router-view />
+        </div>
       </v-main>
     </v-app>
   </v-responsive>
