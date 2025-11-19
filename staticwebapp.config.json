@@ -8,7 +8,7 @@
         "options"
       ],
       "rewrite": "/index.html",
-      "redirect": "/index.html2",
+      "redirect": "/index.html",
       "statusCode": 200
     }
   ]
