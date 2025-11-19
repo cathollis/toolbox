@@ -1,7 +1,7 @@
 {
   "routes": [
     {
-      "route": "/tools/image-convertor",
+      "route": "/tools/image-convertor/",
       "rewrite": "/index.html"
     }
   ]
