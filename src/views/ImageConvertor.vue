@@ -6,7 +6,9 @@ import {
   ImageMagick,
   initializeImageMagick,
   MagickFormat,
+  type AsyncImageCallback,
   type IDefine,
+  type SyncImageCallback,
 } from '@imagemagick/magick-wasm'
 
 import { humanizeBinaryBytes } from '@/utils/humanize.ts'
@@ -142,6 +144,8 @@ const targetFileSizeView = computed<string>(() => {
   return humanizeBinaryBytes(targetBlob.value?.size)
 })
 
+const targetProfileIndexModel = ref<number>(0)
+
 const handleFileUpdated = () => {
   if (inputFileImageUrlView.value.length > 0) {
     URL.revokeObjectURL(inputFileImageUrlView.value)
@@ -170,10 +174,12 @@ const handleConvertToWebp = async () => {
     URL.revokeObjectURL(targetFileImageUrlView.value)
   }
 
+  const targetProfile = targetProfileListView[targetProfileIndexModel.value]
+
   const outputData = await handleConvertToTarget(
     MagickFormat.WebP,
     targetQualityModel.value,
-    webpDesignProfile,
+    targetProfile?.define ?? [],
   )
 
   if (outputData) {
@@ -192,29 +198,34 @@ const handleConvertToTarget = async (
   quality: number,
   defines: IDefine[],
 ): Promise<Uint8Array | undefined> => {
-  if (!inputFile.value) return
+  if (!inputFile.value) {
+    return
+  }
 
-  const fileData = await inputFile.value.arrayBuffer()
+  const process: SyncImageCallback<Uint8Array | undefined> = (image) => {
+    // read finished
+    image.quality = quality
 
-  return new Promise<Uint8Array>((resolver, reject) => {
-    ImageMagick.read(new Uint8Array(fileData), (image) => {
-      // read finished
-      image.quality = quality
+    try {
+      defines.forEach((define) => {
+        image.settings.setDefine(define.format, define.name, define.value)
+      })
+
+      image.colorSpace = ColorSpace.sRGB
 
       try {
-        defines.forEach((define) => {
-          image.settings.setDefine(define.format, define.name, define.value)
-        })
-
-        image.colorSpace = ColorSpace.sRGB
-        image.write(targetFormat, (outputData) => {
-          resolver(outputData)
-        })
-      } catch (e) {
-        alert(e)
+        return image.write<Uint8Array>(targetFormat, (data) => Uint8Array.from(data))
+      } catch (writeException) {
+        alert(['write failed', writeException])
       }
-    })
-  })
+    } catch (e) {
+      alert(['read failed', e])
+    }
+  }
+
+  const fileData = await inputFile.value.arrayBuffer()
+  const result = ImageMagick.read<Uint8Array | undefined>(new Uint8Array(fileData), process)
+  return result
 }
 
 const handleReset = () => {
@@ -288,17 +299,28 @@ const containerRef = ref<VNodeRef | undefined>()
             </template>
           </v-slider>
 
-          <v-row class="flex-nowrap" style="width: 100%; overflow-x: auto">
-            <v-col
-              style="width: 900px; flex-basis: unset"
-              :key="index"
+          <!-- target profile list -->
+          <div class="w-auto d-flex flex-nowrap flex-row overflow-x-auto">
+            <v-card
               v-for="(profile, index) in targetProfileListView"
+              :key="index"
+              style="width: 22em; height: 10em"
+              class="ma-2 flex-shrink-0"
+              :class="index === targetProfileIndexModel ? ' bg-primary' : 'bg-background'"
             >
-              <v-card :title="profile.title">
-                <v-card-text>{{ profile.description }}</v-card-text>
-              </v-card>
-            </v-col>
-          </v-row>
+              <v-card-title>{{ profile.title }}</v-card-title>
+              <v-card-text>{{ profile.description }}</v-card-text>
+              <v-card-actions class="position-absolute bottom-0">
+                <v-btn
+                  :disabled="index === targetProfileIndexModel || isProgressing"
+                  :color="index === targetProfileIndexModel ? '' : 'primary'"
+                  @click="targetProfileIndexModel = index"
+                >
+                  SELECT PROFILE
+                </v-btn>
+              </v-card-actions>
+            </v-card>
+          </div>
         </v-card-text>
 
         <v-card-actions>
@@ -315,10 +337,61 @@ const containerRef = ref<VNodeRef | undefined>()
           <p>From {{ inputFileSizeView }} to {{ targetFileSizeView }} ({{ diffSizeView }})</p>
           <div class="d-flex flex-row">
             <!-- original -->
-            <v-img :src="inputFileImageUrlView"></v-img>
+            <v-card style="flex-shrink: 0; width: 50%">
+              <v-card-title
+                >Original<span class="text-body-1"
+                  >(blank if not support preview)</span
+                ></v-card-title
+              >
+              <v-card-text>
+                <div>detail(10x)(not prefect on mobile):</div>
+                <div
+                  class="ma-4"
+                  :style="{
+                    width: '480px',
+                    height: '480px',
+                    backgroundImage: `url(${inputFileImageUrlView})`,
+                    backgroundSize: 10 * 100 + '% auto',
+                    backgroundPosition: 'center center',
+                    backgroundRepeat: 'no-repeat',
+                    border: '2px solid #2196f3',
+                    borderRadius: '6px',
+                  }"
+                ></div>
+
+                <v-img
+                  class="ma-4"
+                  style="border: 0.2em solid"
+                  :src="inputFileImageUrlView"
+                ></v-img>
+              </v-card-text>
+            </v-card>
 
             <!-- converted -->
-            <v-img :src="targetFileImageUrlView"></v-img>
+            <v-card style="flex-shrink: 0; width: 50%" title="Converted">
+              <v-card-text>
+                <div>detail(10x)(not prefect on mobile):</div>
+                <div
+                  class="ma-4"
+                  :style="{
+                    width: '480px',
+                    height: '480px',
+                    backgroundImage: `url(${targetFileImageUrlView})`,
+                    backgroundSize: 10 * 100 + '% auto',
+                    backgroundPosition: 'center center',
+                    backgroundRepeat: 'no-repeat',
+                    border: '2px solid #2196f3',
+                    borderRadius: '6px',
+                  }"
+                ></div>
+
+                <v-img
+                  class="ma-4"
+                  style="border: 0.2em solid"
+                  :src="targetFileImageUrlView"
+                ></v-img>
+              </v-card-text>
+            </v-card>
           </div>
         </v-card-text>
       </v-card>
