@@ -257,14 +257,16 @@ const containerRef = ref<VNodeRef | undefined>()
 <template>
   <div :ref="containerRef" style="width: 100%; height: 100%; position: relative">
     <v-container class="d-flex flex-column ga-8">
-      <v-overlay
-        contained
-        class="d-flex align-center justify-center"
-        persistent
-        v-model="pageIsProgressing"
-      >
-        <v-progress-circular indeterminate color="primary" />
-      </v-overlay>
+      <v-alert :closable="!pageIsProgressing" :type="pageIsProgressing ? 'warning' : 'success'">
+        <v-progress-linear
+          :model-value="pageIsProgressing ? undefined : 100"
+          :indeterminate="pageIsProgressing"
+        ></v-progress-linear>
+        <span v-if="pageIsProgressing">
+          Waiting WASM file to be loaded. before that, you can't convert images.
+        </span>
+        <span v-else>WASM loaded success.</span>
+      </v-alert>
 
       <v-card title="Operations">
         <v-card-text>
@@ -324,7 +326,11 @@ const containerRef = ref<VNodeRef | undefined>()
         </v-card-text>
 
         <v-card-actions>
-          <v-btn :disabled="!inputFile" :loading="isProgressing" @click="handleConvertToWebp">
+          <v-btn
+            :disabled="!inputFile || pageIsProgressing"
+            :loading="isProgressing"
+            @click="handleConvertToWebp"
+          >
             Process
           </v-btn>
 
