@@ -13,8 +13,6 @@ import {
 
 import { humanizeBinaryBytes } from '@/utils/humanize.ts'
 
-import wasm from '@imagemagick/magick-wasm/magick.wasm?url'
-
 const webpDesignProfile: IDefine[] = [
   {
     format: MagickFormat.WebP,
@@ -238,6 +236,8 @@ const handleReset = () => {
 
 onMounted(async () => {
   pageIsProgressing.value = true
+
+  const wasm = 'https://infrastoragehollis.blob.core.windows.net/toolbox/wasm/magick.wasm'
   fetch(wasm)
     .then((res) => res.arrayBuffer())
     .then(async (assembly) => {
