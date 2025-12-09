@@ -9,6 +9,7 @@ import * as directives from 'vuetify/directives'
 import { aliases, mdi } from 'vuetify/iconsets/mdi'
 
 import { createPinia } from 'pinia'
+import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 
 import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker'
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
@@ -31,6 +32,7 @@ const vuetify = createVuetify({
 })
 
 const pinia = createPinia()
+pinia.use(piniaPluginPersistedstate)
 
 // @ts-ignore
 self.MonacoEnvironment = {
