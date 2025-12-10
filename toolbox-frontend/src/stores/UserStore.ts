@@ -6,11 +6,19 @@ export const useUser = defineStore(
   () => {
     const isLogin = ref<boolean>(false)
     const userName = ref<string>('')
-    const token = ref<string>('')
+    const name = ref<string>('')
+    const token = ref<string | null>(null)
 
-    return { isLogin, userName, token }
+    const logout = () => {
+      isLogin.value = false
+      userName.value = ''
+      name.value = ''
+      token.value = ''
+    }
+
+    return { logout, isLogin, userName, name, token }
   },
   {
     persist: true,
-  }
+  },
 )
