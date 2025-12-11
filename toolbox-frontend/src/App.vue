@@ -28,6 +28,11 @@ onMounted(async () => {
   } catch (err) {
     console.error('MSAL 初始化失败:', err)
   }
+
+  if (userStoreRef.isLogin) {
+    const url = await fetchPhoto()
+    avatarUrl.value = url
+  }
 })
 
 const handleLogin = async () => {
@@ -41,6 +46,9 @@ const handleLogin = async () => {
     userStoreRef.token.value = loginResponse.accessToken
     userStoreRef.userName.value = loginResponse.account.username
     userStoreRef.name.value = loginResponse.account.name ?? ''
+
+    const url = await fetchPhoto()
+    avatarUrl.value = url
   } catch (error) {
     console.error('登录失败:', error)
   }
@@ -53,13 +61,6 @@ const handleLogout = () => {
 const handlePlatformLogout = () => {
   msalInstance.logoutPopup()
 }
-
-onMounted(async () => {
-  if (userStoreRef.isLogin) {
-    const url = await fetchPhoto()
-    avatarUrl.value = url
-  }
-})
 
 const fetchPhoto = async () => {
   const resp = await microsoftApi.get('me/photo/$value', { responseType: 'blob' })

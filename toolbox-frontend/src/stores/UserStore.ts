@@ -1,22 +1,19 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
+import type { AuthenticationResult } from '@azure/msal-browser'
 
 export const useUser = defineStore(
   'toolbox.cathollis.com.user',
   () => {
     const isLogin = ref<boolean>(false)
-    const userName = ref<string>('')
-    const name = ref<string>('')
-    const token = ref<string | null>(null)
+    const authInfo = ref<AuthenticationResult | null>(null)
 
     const logout = () => {
       isLogin.value = false
-      userName.value = ''
-      name.value = ''
-      token.value = ''
+      authInfo.value = null
     }
 
-    return { logout, isLogin, userName, name, token }
+    return { logout, isLogin }
   },
   {
     persist: true,
