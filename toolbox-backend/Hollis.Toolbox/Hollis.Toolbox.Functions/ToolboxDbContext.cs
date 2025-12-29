@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Hollis.Toolbox.Functions;
 
-public class ToolboxDbContext : DbContext
+public class ToolboxDbContext(DbContextOptions<ToolboxDbContext> options) : DbContext(options)
 {
     public DbSet<PastebinItem> PastebinItems { get; set; }
 
