@@ -3,40 +3,34 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Extensions.Sql;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.ComponentModel.DataAnnotations;
 using System.Runtime.CompilerServices;
 
 namespace Hollis.Toolbox.Functions;
 
-public class PastebinFunction(ILogger<PastebinFunction> logger)
+public class PastebinFunction(
+    ILogger<PastebinFunction> logger,
+    ToolboxDbContext dbContext)
 {
-    const string HTTP_GET = "GET";
-    const string HTTP_POST = "POST";
-    const string QUERY_SQL = "select * from Toolbox_Pastebin_PastebinItems where AccessCode = @Code and Expired = false";
-
     [Function(nameof(GetPastebin))]
-    public IActionResult GetPastebin(
-        [HttpTrigger(AuthorizationLevel.Anonymous, HTTP_GET, Route = "{code}")] HttpRequest _,
-        [SqlInput(QUERY_SQL, "SqlConnectionString", parameters: "@Code={code}")] IEnumerable<PastebinItem> pastebinItemList
+    public async Task<IActionResult> GetPastebin(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "{code}")] HttpRequest req, string code
         )
     {
-        if (!pastebinItemList.Any())
+        var pastebinItem = await dbContext.PastebinItems.FirstOrDefaultAsync(x => x.AccessCode == code);
+
+        if (pastebinItem is null || pastebinItem.IsExpired())
         {
             return new NotFoundResult();
         }
 
-        var result = pastebinItemList.FirstOrDefault(x => !x.IsExpired());
-        if(result is null)
-        {
-            return new NotFoundResult();
-        }
-
-        return new OkObjectResult(result);
+        return new OkObjectResult(pastebinItem);
     }
 
     [Function(nameof(CreatePastebin))]
-    public IActionResult CreatePastebin([HttpTrigger(AuthorizationLevel.Anonymous, HTTP_POST)] HttpRequest req)
+    public IActionResult CreatePastebin([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req)
     {
         return new OkObjectResult("Welcome to Azure Functions!");
     }

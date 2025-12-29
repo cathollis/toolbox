@@ -25,15 +25,4 @@ public class PastebinItem
 
         return ExpiredAfter <= DateTimeOffset.UtcNow;
     }
-
-    /*
-     CREATE TABLE Toolbox_Pastebin_PastebinItems (
-        Id uniqueidentifier NOT NULL PRIMARY KEY,
-        AccessCode nvarchar(100) NOT NULL,
-        Content nvarchar(max) NOT NULL,
-        PasswordHash nvarchar(512) NULL,
-        ExpiredAfter datetimeoffset NULL,
-        Expired bit NOT NULL
-    );
-     */
 }
