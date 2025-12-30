@@ -43,9 +43,6 @@ const handleLogin = async () => {
     console.log(loginResponse)
 
     userStoreRef.isLogin.value = true
-    userStoreRef.token.value = loginResponse.accessToken
-    userStoreRef.userName.value = loginResponse.account.username
-    userStoreRef.name.value = loginResponse.account.name ?? ''
 
     const url = await fetchPhoto()
     avatarUrl.value = url
@@ -89,7 +86,7 @@ const fetchPhoto = async () => {
           >
             <v-avatar v-if="avatarUrl === null" icon="mdi-account"></v-avatar>
             <v-avatar v-else :image="avatarUrl"></v-avatar>
-            <span class="ml-2">{{ userStoreRef.name }}</span>
+            <span class="ml-2">{{ 'Login is under dev' }}</span>
 
             <v-menu activator="parent">
               <v-list>
