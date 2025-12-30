@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.ComponentModel.DataAnnotations;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 
 namespace Hollis.Toolbox.Functions;
 
@@ -19,10 +20,12 @@ public class PastebinFunction(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "{code}")] HttpRequest req, string code
         )
     {
-        var pastebinItem = await dbContext.PastebinItems.FirstOrDefaultAsync(x => x.AccessCode == code);
+        var pastebinItem = await dbContext.PastebinItems
+            .FirstOrDefaultAsync(x => x.AccessCode == code);
 
         if (pastebinItem is null || pastebinItem.IsExpired())
         {
+            logger.LogWarning("Pastebin Item not found with code: {code}", code);
             return new NotFoundResult();
         }
 
@@ -30,8 +33,16 @@ public class PastebinFunction(
     }
 
     [Function(nameof(CreatePastebin))]
-    public IActionResult CreatePastebin([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req)
+    public async Task<IActionResult> CreatePastebin([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req)
     {
-        return new OkObjectResult("Welcome to Azure Functions!");
+        var obj = await JsonSerializer.DeserializeAsync<PastebinItem>(req.Body);
+        if (obj is null) {
+            return new BadRequestResult();
+        }
+        
+        await dbContext.PastebinItems.AddAsync(obj);
+        await dbContext.SaveChangesAsync();
+
+        return new OkObjectResult(obj);
     }
 }
