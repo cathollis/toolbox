@@ -16,7 +16,7 @@ builder.ConfigureFunctionsWebApplication();
 
 builder.Services.AddDbContext<ToolboxDbContext>(options =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("SQLCONNSTR_SHARED");
+    var connectionString = builder.Configuration["SQLCONNSTR_SHARED"];
     options.UseSqlServer(connectionString);
 });
 
