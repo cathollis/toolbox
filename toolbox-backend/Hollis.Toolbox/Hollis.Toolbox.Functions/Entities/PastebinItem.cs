@@ -6,7 +6,10 @@ namespace Hollis.Toolbox.Functions.Entities;
 [Index(nameof(AccessCode))]
 public class PastebinItem
 {
-    public PastebinItem() { }
+    public PastebinItem(string accessCode)
+    {
+        AccessCode = accessCode;
+    }
 
     public PastebinItem(string content, string accessCode)
     {
@@ -19,12 +22,12 @@ public class PastebinItem
     public Guid Id { get; init; } = Guid.NewGuid();
 
     [MaxLength(128)]
-    public required string AccessCode { get; set; }
+    public string AccessCode { get; init; }
 
     public required StorageType ContentStorageType { get; set; } = StorageType.Database;
 
     [MaxLength(16384)]
-    public required string? ContentInDb { get; set; }
+    public string? ContentInDb { get; init; }
 
     [MaxLength(128)]
     public string? PasswordHash { get; set; }

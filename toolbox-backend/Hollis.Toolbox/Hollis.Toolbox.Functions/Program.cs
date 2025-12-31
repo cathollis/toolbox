@@ -20,4 +20,6 @@ builder.Services.AddDbContext<ToolboxDbContext>(options =>
     options.UseSqlServer(connectionString);
 });
 
+builder.Services.AddSingleton<AccessCodeGenerator>();
+
 builder.Build().Run();
