@@ -1,6 +1,7 @@
 using Hollis.Toolbox.Functions.Entities;
 using Hollis.Toolbox.Functions.Models;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Extensions.Sql;
@@ -15,27 +16,75 @@ namespace Hollis.Toolbox.Functions;
 public class PastebinFunction(
     ILogger<PastebinFunction> logger,
     ToolboxDbContext dbContext,
-    AccessCodeGenerator accessCodeGenerator)
+    AccessCodeGenerator accessCodeGenerator,
+    PasswordHasher<PastebinItem> hasher)
 {
+    private const uint PASSWORD_LENGTH = 4;
+
     [Function(nameof(GetPastebin))]
     public async Task<IActionResult> GetPastebin(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "{code}")] HttpRequest req, string code
-        )
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "{code}")] HttpRequest req,
+        string code)
     {
+        var saveDatabase = false;
         var pastebinItem = await dbContext.PastebinItems
             .FirstOrDefaultAsync(x => x.AccessCode == code);
 
-        if (pastebinItem is null || pastebinItem.IsExpired())
+        // verify query
+        if (pastebinItem is null)
         {
-            logger.LogWarning("Pastebin Item not found with code: {code}", code);
+            logger.LogWarning("Pastebin Item not found with code: {code}.", code);
             return new NotFoundResult();
         }
 
+        // verify expired time
+        if (pastebinItem.IsExpired())
+        {
+            logger.LogWarning("Pastebin Item with code: {code} has expired.", code);
+            return new NotFoundResult();
+        }
+
+        // verify password
+        if (pastebinItem.PasswordHash is not null)
+        {
+            var passsword = pastebinItem.PasswordHash.Trim();
+            if (passsword.Length <= PASSWORD_LENGTH)
+            {
+                return new NotFoundResult();
+            }
+
+            var verify = hasher.VerifyHashedPassword(pastebinItem, pastebinItem.PasswordHash, passsword);
+            if (verify == PasswordVerificationResult.Failed)
+            {
+                return new NotFoundResult();
+            }
+
+            if (verify == PasswordVerificationResult.SuccessRehashNeeded)
+            {
+                var passwordHash = hasher.HashPassword(pastebinItem, passsword);
+                pastebinItem.PasswordHash = passwordHash;
+                saveDatabase = true;
+            }
+        }
+
+        if (pastebinItem.ConfiguredExpiredAfterRead)
+        {
+            logger.LogWarning("Pastebin Item with code: {code} has configured expired after read, update.", code);
+
+            pastebinItem.Expired = true;
+            saveDatabase = true;
+        }
+
+        if (saveDatabase)
+        {
+            await dbContext.SaveChangesAsync();
+        }
         return new OkObjectResult(pastebinItem);
     }
 
     [Function(nameof(CreatePastebin))]
-    public async Task<IActionResult> CreatePastebin([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req)
+    public async Task<ActionResult<PastebinItemCreateResponse>> CreatePastebin(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req)
     {
         PastebinItemCreateRequest? createReq = null;
         try
@@ -52,24 +101,46 @@ public class PastebinFunction(
             return new BadRequestResult();
         }
 
+        if (createReq.Password is not null
+            && !string.IsNullOrWhiteSpace(createReq.Password)
+            && createReq.Password.Length < PASSWORD_LENGTH)
+        {
+            return new BadRequestResult();
+        }
+
+        if (createReq.ExpiredAfter is not null && createReq.ExpiredAfter.Value <= DateTimeOffset.Now)
+        {
+            return new BadRequestResult();
+        }
+
         var accessCodeLength = await GetAccessCodeDefaultLength();
         var accessCode = await accessCodeGenerator.GenerateAsync(accessCodeLength, AccessCodeExists);
 
-        var newPastebinItem = new PastebinItem(accessCode)
+        var newPastebinItem = new PastebinItem()
         {
-            ContentStorageType = PastebinItem.StorageType.Database
+            AccessCode = accessCode,
+            ContentStorageType = PastebinItem.StorageType.Database,
+            ContentInDb = createReq.Content,
+            ExpiredAfter = createReq.ExpiredAfter,
+            ConfiguredExpiredAfterRead = createReq.ExpiredAfterRead,
         };
+
+        if (createReq.Password is not null)
+        {
+            newPastebinItem.PasswordHash = hasher.HashPassword(newPastebinItem, createReq.Password);
+        }
 
         await dbContext.PastebinItems.AddAsync(newPastebinItem);
         await dbContext.SaveChangesAsync();
 
-        return new OkObjectResult(newPastebinItem);
+        var createResp = new PastebinItemCreateResponse(newPastebinItem.AccessCode);
+        return new OkObjectResult(createResp);
     }
 
-    public Task<bool> AccessCodeExists(string code)
+    private Task<bool> AccessCodeExists(string code)
         => dbContext.PastebinItems.AnyAsync(x => x.AccessCode == code);
 
-    public async Task<uint> GetAccessCodeDefaultLength()
+    private async Task<uint> GetAccessCodeDefaultLength()
     {
         const uint INIT_LENGTH = 4;
         var currentLength = await dbContext.PastebinItems.MaxAsync(x => x.AccessCode.Length);

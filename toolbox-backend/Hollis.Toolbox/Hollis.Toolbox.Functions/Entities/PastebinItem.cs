@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Hollis.Toolbox.Functions.Models;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 
 namespace Hollis.Toolbox.Functions.Entities;
@@ -6,23 +7,11 @@ namespace Hollis.Toolbox.Functions.Entities;
 [Index(nameof(AccessCode))]
 public class PastebinItem
 {
-    public PastebinItem(string accessCode)
-    {
-        AccessCode = accessCode;
-    }
-
-    public PastebinItem(string content, string accessCode)
-    {
-        ContentInDb = content;
-        ContentStorageType = StorageType.Database;
-        AccessCode = accessCode;
-    }
-
     [Key]
     public Guid Id { get; init; } = Guid.NewGuid();
 
     [MaxLength(128)]
-    public string AccessCode { get; init; }
+    public required string AccessCode { get; init; }
 
     public required StorageType ContentStorageType { get; set; } = StorageType.Database;
 
@@ -34,7 +23,9 @@ public class PastebinItem
 
     public DateTimeOffset? ExpiredAfter { get; set; }
 
-    public bool Expired { get; set; }
+    public required bool ConfiguredExpiredAfterRead { get; set; }
+
+    public bool Expired { get; set; } = false;
 
     public bool IsExpired()
     {

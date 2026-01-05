@@ -1,4 +1,6 @@
 using Hollis.Toolbox.Functions;
+using Hollis.Toolbox.Functions.Entities;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -21,5 +23,6 @@ builder.Services.AddDbContext<ToolboxDbContext>(options =>
 });
 
 builder.Services.AddSingleton<AccessCodeGenerator>();
+builder.Services.AddSingleton<PasswordHasher<PastebinItem>>();
 
 builder.Build().Run();
