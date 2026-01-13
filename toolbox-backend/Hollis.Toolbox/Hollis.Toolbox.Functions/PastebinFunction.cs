@@ -23,7 +23,7 @@ public class PastebinFunction(
 
     [Function(nameof(GetPastebin))]
     public async Task<IActionResult> GetPastebin(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "{code}")] HttpRequest req,
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = nameof(PastebinItem) + "/{code}")] HttpRequest req,
         string code)
     {
         var saveDatabase = false;
@@ -84,7 +84,7 @@ public class PastebinFunction(
 
     [Function(nameof(CreatePastebin))]
     public async Task<ActionResult<PastebinItemCreateResponse>> CreatePastebin(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req)
+        [HttpTrigger(AuthorizationLevel.User, "post", Route = nameof(PastebinItem) + "/")] HttpRequest req)
     {
         PastebinItemCreateRequest? createReq = null;
         try
