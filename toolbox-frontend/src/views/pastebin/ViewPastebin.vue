@@ -32,12 +32,7 @@ onMounted(async () => {
       <v-card-text>
         <div v-if="isLoading">Loading</div>
         <div v-else style="height: 20rem">
-          <CodeEditor
-            v-model:value="text"
-            :language="language"
-            theme="vs-dark"
-            :options="{ readOnly: true }"
-          />
+          <v-textarea v-model:value="text" readonly no-resize />
         </div>
       </v-card-text>
     </v-card>
