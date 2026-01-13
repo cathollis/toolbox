@@ -1,8 +1,5 @@
 {
-  "routes": [
-    {
-      "route": "/tools/",
-      "rewrite": "/index.html"
-    }
-  ]
+  "navigationFallback": {
+    "rewrite": "/index.html"
+  }
 }
