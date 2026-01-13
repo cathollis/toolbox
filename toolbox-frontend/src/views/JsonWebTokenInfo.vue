@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { CodeEditor } from 'monaco-editor-vue3'
 import { jwtDecode } from 'jwt-decode'
 
-const language = ref<string>('plaintext')
 const tokenModel = ref<string>('')
 const result = ref<string>('')
 
