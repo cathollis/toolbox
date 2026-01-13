@@ -1,4 +1,4 @@
-import { useUser } from '@/stores/UserStore'
+import { msalInstance } from '@/utils/msal'
 import axios from 'axios'
 
 const microsoftApi = axios.create({
@@ -8,8 +8,7 @@ const microsoftApi = axios.create({
 
 microsoftApi.interceptors.request.use(
   (config) => {
-    const userStore = useUser()
-    const token = userStore.token
+    const token = msalInstance.getTokenCache()
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }

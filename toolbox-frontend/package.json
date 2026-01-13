@@ -25,6 +25,7 @@
     "@types/humanize-duration": "^3.27.4",
     "axios": "^1.13.2",
     "humanize-duration": "^3.33.1",
+    "jwt-decode": "^4.0.0",
     "monaco-editor": "^0.54.0",
     "monaco-editor-vue3": "^1.0.4",
     "pinia": "^3.0.4",
@@ -34,6 +35,7 @@
   },
   "devDependencies": {
     "@tsconfig/node22": "^22.0.2",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.18.11",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vue/eslint-config-prettier": "^10.2.0",

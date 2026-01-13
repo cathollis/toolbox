@@ -10,10 +10,7 @@ const userStoreRef = storeToRefs(userStore)
   <v-container>
     <v-card title="Home Page">
       <v-card-text>
-        <div>
-          Hello, {{ userStoreRef.isLogin.value ? userStoreRef.userName.value : 'someone' }} ,
-          welcome to Hollis's toolbox.
-        </div>
+        <div>Hello, someone , welcome to Hollis's toolbox.</div>
         <div v-if="!userStoreRef.isLogin.value">
           Login to use (non-existent) functions that need access api. And contact Hollis if you knew
           him/her to unlock more functions that need he/she pay money.

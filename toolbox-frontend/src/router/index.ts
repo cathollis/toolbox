@@ -3,6 +3,7 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import Index from '@/views/Home.vue'
 import MediaInfo from '@/views/MediaInfo.vue'
 import ImageConvertor from '@/views/ImageConvertor.vue'
+import JsonWebTokenInfo from '@/views/JsonWebTokenInfo.vue'
 
 export const menuList = [
   {
@@ -22,6 +23,18 @@ export const menuList = [
     id: 'tools_image-convertor',
     path: '/tools/image-convertor',
     component: ImageConvertor,
+  },
+  // {
+  //   title: 'Pastebin',
+  //   id: 'tools_pastebin',
+  //   path: '/tools/pastebin/:code',
+  //   component: PasteBin,
+  // },
+  {
+    title: 'JsonWebTokenInfo',
+    id: 'tools_json-web-token-info',
+    path: '/tools/json-web-token-info',
+    component: JsonWebTokenInfo,
   },
 ]
 
