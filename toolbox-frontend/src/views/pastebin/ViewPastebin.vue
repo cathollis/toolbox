@@ -14,7 +14,7 @@ const code = route.params.code
 onMounted(async () => {
   isLoading.value = true
   const pastebinItem = await axiosInstance.get('pastebinitem/' + code)
-  text.value = pastebinItem.data
+  text.value = pastebinItem.data['content']
   isLoading.value = false
 })
 </script>

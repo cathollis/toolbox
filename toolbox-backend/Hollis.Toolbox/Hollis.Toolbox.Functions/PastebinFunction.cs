@@ -79,7 +79,11 @@ public class PastebinFunction(
         {
             await dbContext.SaveChangesAsync();
         }
-        return new OkObjectResult(pastebinItem);
+
+        return new OkObjectResult(new PastebinItemGetResponse()
+        {
+            Content = pastebinItem.ContentInDb ?? string.Empty
+        });
     }
 
     [Function(nameof(CreatePastebin))]
