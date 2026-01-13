@@ -4,7 +4,7 @@ import { CodeEditor } from 'monaco-editor-vue3'
 import { useRoute } from 'vue-router'
 import axiosInstance from '@/utils/request'
 
-// const isProgressing = ref<boolean>(false)
+const isLoading = ref<boolean>(false)
 
 const route = useRoute()
 const language = ref<string>('plaintext')
@@ -13,9 +13,10 @@ const text = ref<string>('')
 const code = route.params.code
 
 onMounted(async () => {
+  isLoading.value = true
   const pastebinItem = await axiosInstance.get('pastebinitem/' + code)
   text.value = pastebinItem.data
-  // use code to send HTTP request
+  isLoading.value = false
 })
 </script>
 
@@ -29,7 +30,8 @@ onMounted(async () => {
 
     <v-card title="Content">
       <v-card-text>
-        <div style="height: 500px">
+        <div v-if="isLoading">Loading</div>
+        <div v-else style="height: 20rem">
           <CodeEditor
             v-model:value="text"
             :language="language"
