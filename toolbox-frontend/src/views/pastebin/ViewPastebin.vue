@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { CodeEditor } from 'monaco-editor-vue3'
 import { useRoute } from 'vue-router'
 import axiosInstance from '@/utils/request'
 
